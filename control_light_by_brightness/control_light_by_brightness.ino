@@ -10,11 +10,13 @@ const char* PASSWORD = "";
 const char* NTP_SERVER = "ntp.nict.jp";
 
 // 実行時刻（日本時間）
-constexpr int TARGET_HOUR = 0;
-constexpr int TARGET_MINUTE = 9;
+constexpr int TARGET_HOUR = 1;
+constexpr int TARGET_MINUTE = 30;
 
 // 最終実行日時 yyyyMMdd
 int lastExecutionDate = -1;
+
+constexpr int BRIGHTNESS_THRESHOLD = 100;
 
 
 void setup() {
@@ -22,7 +24,7 @@ void setup() {
 
   analogReadResolution(12);
   pinMode(SENSOR_PIN, INPUT);
-  
+
   // Wifi接続
   WiFi.begin(SSID, PASSWORD);
   // 接続完了まで待機
@@ -33,6 +35,8 @@ void setup() {
   Serial.print("Wifi Connected");
 
   syncDateTime();
+
+  executeTask();
 }
 
 void loop() {
@@ -54,6 +58,9 @@ void loop() {
 
     executeTask();
   }
+
+  // getBrightnessSensorValue();
+  // delay(1000);
 }
 
 void syncDateTime() {
@@ -80,14 +87,15 @@ int getBrightnessSensorValue() {
 }
 
 void executeTask() {
-  
+
   int lightValue = getBrightnessSensorValue();
-  
+
   Serial.print("Light: ");
   Serial.println(lightValue);
 
-  sendHttpGet();
-
+  if (lightValue > BRIGHTNESS_THRESHOLD) {
+    sendHttpGet();
+  }
 }
 
 
@@ -95,7 +103,7 @@ void sendHttpGet() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin("http://192.168.10.160:3000/discord");
+  http.begin("http://192.168.10.211:3000/turnOff");
 
   int httpCode = http.GET();
 
@@ -104,7 +112,7 @@ void sendHttpGet() {
     Serial.println(http.getString());
   } else {
     Serial.printf("HTTP Error: %s\n",
-                  http.errorToString(httpCode).c_str());
+    http.errorToString(httpCode).c_str());
   }
 
   http.end();
